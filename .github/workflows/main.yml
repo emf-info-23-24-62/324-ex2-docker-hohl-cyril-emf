@@ -5,8 +5,10 @@ on:
     branches:
       - main
 
+
+
 jobs:
-  lint-backend:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,3 +22,28 @@ jobs:
       - name: Run linters
         working-directory: ./
         run: npm run lint
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t notes -f ./Dockerfile ./apps/backend
+
+      - name: Login ACR
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Push Docker image to ACR
+        run: |
+          docker tag notes:hohl ${{ secrets.ACR_LOGIN_SERVER }}/notes:hohl
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/notes:hohl
+
+
